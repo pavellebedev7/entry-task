@@ -178,15 +178,9 @@ def play1():
 
     #  Input/output plotting
     plt.figure()
-    plt.subplot(211)
     plt.plot(x0 / FS, y0, x1 / FS, y1, xd * n1 / ((n - 1) * N), diff)
     plt.grid(True)
     plt.fill_between(xd * n1 / ((n - 1) * N), -1, 1, where=pred > 0, color='green', alpha='0.75')
-
-    plt.subplot(212)
-    plt.plot(xf0 * N, medfilt(zf0[0], MEDFILT_W), xf1 * N, medfilt(zf1[0], MEDFILT_W))
-    plt.xscale('log')
-    plt.grid(True)
     plt.show()
 
 
