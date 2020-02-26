@@ -26,9 +26,9 @@ FS = 44100                  # Sample rate, s^-1
 REC_TIME_0 = 1              # First record time, s
 REC_TIME_1 = 5              # Second record time, s
 LOGIC_LEVEL = 0.5
-NOISE_LEVEL = 0.0002        # Spectrum noise filter set experimentally 0.0002
-INPUT_NOISE_LEVEL = 0.01    # Input signal noise filter set = 1%
-MEDFILT_W = 1               # Median filter window
+NOISE_LEVEL = 0.0003        # Spectrum noise filter set experimentally 0.0002
+INPUT_NOISE_LEVEL = 0.05    # Input signal noise filter set = 1%
+MEDFILT_W = 5               # Median filter window
 N = 10                      # Number of chunks per second
 
 input0 = 0                  # First input array
@@ -51,6 +51,13 @@ def rec0():
     global input0
     global LEN_0
     LEN_0 = FS * REC_TIME_0
+    # x = np.linspace(0, LEN_0, LEN_0)
+    # noise = np.random.normal(0, 0.02, LEN_0)
+    # z = noise + 0.5 * sp.sin(440.0 / FS * 2 * sp.pi * x + PHASE) + 0.5 * sp.sin(
+    #     880.0 / FS * 2 * sp.pi * x) + 0.5 * sp.sin(1760.0 / FS * 2 * sp.pi * x)
+    # input0 = z
+    # input0[:24255] = 0
+    # input0[26460:] = 0
 
     input0 = sd.rec(int(LEN_0), samplerate=FS, channels=1)
     sd.wait()
@@ -80,6 +87,15 @@ def play0():
 def rec1():
     global input1
     plt.close('all')
+    # x = np.linspace(0, LEN_1, LEN_1)
+    # z = 0.5 * sp.sin(440.0 / FS * 2 * sp.pi * x) + 0.5 * sp.sin(880.0 / FS * 2 * sp.pi * x) + 0.5 * sp.sin(
+    #     1760.0 / FS * 2 * sp.pi * x)
+    # input1 = z
+    # input1[:44100] = 0
+    # input1[1 * 44100:2 * 44100] = 0
+    # input1[3 * 44100:4 * 44100] = 0
+    # input1[6 * 44100:7 * 44100] = 0
+    # input1[8 * 44100:9 * 44100] = 0
 
     input1 = sd.rec(int(LEN_1), samplerate=FS, channels=1)
     sd.wait()
