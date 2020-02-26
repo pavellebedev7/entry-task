@@ -26,9 +26,9 @@ FS = 44100                  # Sample rate, s^-1
 REC_TIME_0 = 1              # First record time, s
 REC_TIME_1 = 5              # Second record time, s
 LOGIC_LEVEL = 0.5
-NOISE_LEVEL = 0.0003        # Spectrum noise filter set experimentally 0.0002
-INPUT_NOISE_LEVEL = 0.05    # Input signal noise filter set = 1%
-MEDFILT_W = 5               # Median filter window
+NOISE_LEVEL = 0.0002        # Spectrum noise filter set experimentally 0.0002
+INPUT_NOISE_LEVEL = 0.01    # Input signal noise filter set = 1%
+MEDFILT_W = 1               # Median filter window
 N = 10                      # Number of chunks per second
 
 input0 = 0                  # First input array
