@@ -11,7 +11,7 @@ import sounddevice as sd
 root = Tk()
 root.title("Sound recording and recognition")
 root.geometry('1000x500')
-l1 = Label(text="Recognition only works for sounds that longer then 0.1 s", height=3)
+l1 = Label(text="Recognition only works for sounds separated by 1 s", height=3)
 l2 = Label(text="Matches found:", width=20, height=3)
 l3 = Label(text="0")
 l4 = Label(text="Recorded samples:", width=20, height=3)
@@ -120,19 +120,27 @@ def play1():
     for i in range(0, n0):
         zf0[i] = 2.0 / CHUNK * abs(fft(y0[CHUNK * i:CHUNK * (i + 1)] * w)[0:HALF_CHUNK])
         output0[i] = medfilt(zf0[i], MEDFILT_W)
+        #  Spectrum mask
+        for j in range(0, HALF_CHUNK):
+            #  Spectrum filter
+            if np.abs(output0[i][j]) < NOISE_LEVEL:
+                output0[i][j] = 0
+            if output0[i][j] <= LOGIC_LEVEL * np.amax(output0[i]):
+                output0[i][j] = 0
+            else:
+                output0[i][j] = 1
     for i in range(0, n1):
         zf1[i] = 2.0 / CHUNK * abs(fft(y1[CHUNK * i:CHUNK * (i + 1)] * w)[0:HALF_CHUNK])
         output1[i] = medfilt(zf1[i], MEDFILT_W)
-
-    #  Spectrum filter
-    output0[np.abs(output0) < NOISE_LEVEL] = 0
-    output1[np.abs(output1) < NOISE_LEVEL] = 0
-
-    #  Spectrum mask
-    output0[np.abs(output0) <= LOGIC_LEVEL * np.amax(output0)] = 0
-    output0[np.abs(output0) > LOGIC_LEVEL * np.amax(output0)] = 1
-    output1[np.abs(output1) <= LOGIC_LEVEL * np.amax(output1)] = 0
-    output1[np.abs(output1) > LOGIC_LEVEL * np.amax(output1)] = 1
+        #  Spectrum mask
+        for j in range(0, HALF_CHUNK):
+            #  Spectrum filter
+            if np.abs(output1[i][j]) < NOISE_LEVEL:
+                output1[i][j] = 0
+            if output1[i][j] <= LOGIC_LEVEL * np.amax(output1[i]):
+                output1[i][j] = 0
+            else:
+                output1[i][j] = 1
 
     #  Spectrum comparison
     n = n1 + 1
