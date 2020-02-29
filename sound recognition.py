@@ -141,31 +141,35 @@ def play1():
     #  Spectrum comparison
     n = n1 + 1
     xd = np.arange(n)
-    diff = np.zeros(n)
+    matches = np.zeros(n)
     pred = np.zeros(n)
     output1 = np.concatenate([output1, np.zeros((n0, HALF_CHUNK))])
+    print(str(LEN_0) + " " + str(n0))
     for i in range(0, n):
         window = output1[i:i + n0, :]
-        difference = abs(window - output0)
-        total_harm = np.count_nonzero(window) + np.count_nonzero(output0)
-        diff_harm = np.count_nonzero(difference)
+        for j in range(0, n0):
+            for k in range(0, HALF_CHUNK):
+                window[j][k] = window[j][k] and output0[j][k]
+        total_harm = np.count_nonzero(output0)
+        match_harm = np.count_nonzero(window)
+        print(str(i) + " total " + str(total_harm) + " match " + str(match_harm))
         if total_harm > 0:
-            diff[i] = (total_harm - diff_harm) / total_harm
+            matches[i] = 1 - (total_harm - match_harm) / total_harm
         else:
-            diff[i] = 0
+            matches[i] = 0
         if i > 0:
-            if ((diff[i] - diff[i - 1]) <= 0) & (diff[i - 1] > 0):
+            if ((matches[i] - matches[i - 1]) <= 0) & (matches[i - 1] > 0):
                 pred[i] = pred[i - 1] = 1
 
-    if np.count_nonzero(diff) == 0:
+    if np.count_nonzero(matches) == 0:
         l3['text'] = "No matches found"
     else:
-        l3['text'] = np.count_nonzero(diff)
+        l3['text'] = np.count_nonzero(matches)
 
     #  Input/output plotting
     plt.figure()
     plt.title('Blue - first record, orange - second record, green - overlap')
-    plt.plot(x0 / FS, y0, x1 / FS, y1)  # , xd * n1 / ((n - 1) * N), diff
+    plt.plot(x0 / FS, y0, x1 / FS, y1, xd * n1 / ((n - 1) * N), matches)
     plt.grid(True)
     plt.fill_between(xd * n1 / ((n - 1) * N), -1, 1, where=pred > 0, color='green', alpha='0.75')
     plt.xlabel('Time, s')
