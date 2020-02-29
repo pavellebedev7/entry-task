@@ -30,11 +30,10 @@ NOISE_LEVEL = 0.0002        # Spectrum noise filter set experimentally 0.0002
 INPUT_NOISE_LEVEL = 0.01    # Input signal noise filter set = 1%
 MEDFILT_W = 1               # Median filter window
 N = 10                      # Number of chunks per second
-
-input0 = 0                  # First input array
-input1 = 0                  # Second input array
-output0 = 0                 # First output array
-output1 = 0                 # Second output array
+input0 = 0
+input1 = 0
+output0 = 0
+output1 = 0
 
 #  Length calculation
 LEN_0 = FS * REC_TIME_0     # First record length
@@ -108,9 +107,6 @@ def play1():
     n0 = LEN_0 // CHUNK
     n1 = LEN_1 // CHUNK
 
-    xf0 = np.arange(0, HALF_CHUNK, 1)
-    xf1 = np.arange(0, HALF_CHUNK, 1)
-
     zf0 = np.zeros((n0, HALF_CHUNK))
     zf1 = np.zeros((n1, HALF_CHUNK))
     output0 = np.zeros((n0, HALF_CHUNK))
@@ -169,7 +165,7 @@ def play1():
     #  Input/output plotting
     plt.figure()
     plt.title('Blue - first record, orange - second record, green - overlap')
-    plt.plot(x0 / FS, y0, x1 / FS, y1, xd * n1 / ((n - 1) * N), diff)
+    plt.plot(x0 / FS, y0, x1 / FS, y1)  # , xd * n1 / ((n - 1) * N), diff
     plt.grid(True)
     plt.fill_between(xd * n1 / ((n - 1) * N), -1, 1, where=pred > 0, color='green', alpha='0.75')
     plt.xlabel('Time, s')
