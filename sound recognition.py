@@ -24,7 +24,7 @@ b4 = Button(text="Play 2", width=20, height=3)
 #  Constants
 FS = 44100                  # Sample rate, s^-1
 REC_TIME_0 = 1              # First record time, s
-REC_TIME_1 = 3              # Second record time, s
+REC_TIME_1 = 5              # Second record time, s
 LOGIC_LEVEL = 0.5
 NOISE_LEVEL = 0.0002        # Spectrum noise filter set experimentally 0.0002
 INPUT_NOISE_LEVEL = 0.01    # Input signal noise filter set = 1%
