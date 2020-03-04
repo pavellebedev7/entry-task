@@ -144,14 +144,15 @@ def play1():
     matches = np.zeros(n)
     pred = np.zeros(n)
     output1 = np.concatenate([output1, np.zeros((n0, HALF_CHUNK))])
+    window_and_output = np.zeros((n0, HALF_CHUNK))
     print(str(LEN_0) + " " + str(n0))
     for i in range(0, n):
         window = output1[i:i + n0, :]
         for j in range(0, n0):
             for k in range(0, HALF_CHUNK):
-                window[j][k] = window[j][k] and output0[j][k]
+                window_and_output[j][k] = window[j][k] and output0[j][k]
         total_harm = np.count_nonzero(output0)
-        match_harm = np.count_nonzero(window)
+        match_harm = np.count_nonzero(window_and_output)
         print(str(i) + " total " + str(total_harm) + " match " + str(match_harm))
         if total_harm > 0:
             matches[i] = 1 - (total_harm - match_harm) / total_harm
