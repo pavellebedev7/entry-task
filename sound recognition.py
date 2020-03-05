@@ -11,7 +11,7 @@ import sounddevice as sd
 root = Tk()
 root.title("Sound recording and recognition")
 root.geometry('1000x500')
-l1 = Label(text="Recognition only works for sounds separated by 1 s", height=3)
+l1 = Label(text="Recognition only works for sounds that longer then 0.05 s", height=3)
 l2 = Label(text="Matches found:", width=20, height=3)
 l3 = Label(text="0")
 l4 = Label(text="Recorded samples:", width=20, height=3)
@@ -51,6 +51,13 @@ def rec0():
     global LEN_0
     LEN_0 = FS * REC_TIME_0
 
+    # x = np.linspace(0, LEN_0, LEN_0)
+    # noise = np.random.normal(0, 0.02, LEN_0)
+    # z = 0.5 * sp.sin(440.0 / FS * 2 * sp.pi * x) + 0.5 * sp.sin(880.0 / FS * 2 * sp.pi * x) + 0.5 * sp.sin(1760.0 / FS * 2 * sp.pi * x)
+    # input0 = z
+    # input0[:19845] = 0
+    # input0[24255:] = 0
+
     input0 = sd.rec(int(LEN_0), samplerate=FS, channels=1)
     sd.wait()
     input0[:INPUT_TRIM] = 0
@@ -79,6 +86,13 @@ def play0():
 def rec1():
     global input1
     plt.close('all')
+
+    # x = np.linspace(0, LEN_1, LEN_1)
+    # noise = np.random.normal(0, 0.05, LEN_1)
+    # z = noise + 0.1 * sp.sin(440.0 / FS * 2 * sp.pi * x) + 0.1 * sp.sin(880.0 / FS * 2 * sp.pi * x) + 0.1 * sp.sin(1760.0 / FS * 2 * sp.pi * x)
+    # input1 = z
+    # input1[:44100] = 0
+    # input1[2 * 44100:3 * 44100] = 0
 
     input1 = sd.rec(int(LEN_1), samplerate=FS, channels=1)
     sd.wait()
@@ -117,11 +131,12 @@ def play1():
         zf0[i] = 2.0 / CHUNK * abs(fft(y0[CHUNK * i:CHUNK * (i + 1)] * w)[0:HALF_CHUNK])
         output0[i] = medfilt(zf0[i], MEDFILT_W)
         #  Spectrum mask
+        max0 = np.amax(output0[i])
         for j in range(0, HALF_CHUNK):
             #  Spectrum filter
             if np.abs(output0[i][j]) < NOISE_LEVEL:
                 output0[i][j] = 0
-            if output0[i][j] <= LOGIC_LEVEL * np.amax(output0[i]):
+            if output0[i][j] <= LOGIC_LEVEL * max0:
                 output0[i][j] = 0
             else:
                 output0[i][j] = 1
@@ -129,11 +144,12 @@ def play1():
         zf1[i] = 2.0 / CHUNK * abs(fft(y1[CHUNK * i:CHUNK * (i + 1)] * w)[0:HALF_CHUNK])
         output1[i] = medfilt(zf1[i], MEDFILT_W)
         #  Spectrum mask
+        max1 = np.amax(output1[i])
         for j in range(0, HALF_CHUNK):
             #  Spectrum filter
             if np.abs(output1[i][j]) < NOISE_LEVEL:
                 output1[i][j] = 0
-            if output1[i][j] <= LOGIC_LEVEL * np.amax(output1[i]):
+            if output1[i][j] <= LOGIC_LEVEL * max1:
                 output1[i][j] = 0
             else:
                 output1[i][j] = 1
@@ -142,10 +158,10 @@ def play1():
     n = n1 + 1
     xd = np.arange(n)
     matches = np.zeros(n)
-    pred = np.zeros(n)
+    recognition = np.zeros(n)
     output1 = np.concatenate([output1, np.zeros((n0, HALF_CHUNK))])
     window_and_output = np.zeros((n0, HALF_CHUNK))
-    print(str(LEN_0) + " " + str(n0))
+    print("LEN_0 " + str(LEN_0) + " n0 " + str(n0) + " " + "LEN_1 " + str(LEN_1) + " n1 " + str(n1) + " n " + str(n))
     for i in range(0, n):
         window = output1[i:i + n0, :]
         for j in range(0, n0):
@@ -160,7 +176,7 @@ def play1():
             matches[i] = 0
         if i > 0:
             if ((matches[i] - matches[i - 1]) <= 0) & (matches[i - 1] > 0):
-                pred[i] = pred[i - 1] = 1
+                recognition[i] = recognition[i - 1] = 1
 
     if np.count_nonzero(matches) == 0:
         l3['text'] = "No matches found"
@@ -172,7 +188,7 @@ def play1():
     plt.title('Blue - first record, orange - second record, green - overlap')
     plt.plot(x0 / FS, y0, x1 / FS, y1, xd * n1 / ((n - 1) * N), matches)
     plt.grid(True)
-    plt.fill_between(xd * n1 / ((n - 1) * N), -1, 1, where=pred > 0, color='green', alpha='0.75')
+    plt.fill_between(xd * n1 / ((n - 1) * N), -1, 1, where=recognition > 0, color='green', alpha='0.75')
     plt.xlabel('Time, s')
     plt.show()
 
