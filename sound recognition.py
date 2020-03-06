@@ -14,7 +14,7 @@ root.geometry('1000x500')
 l1 = Label(text="Recognition only works for sounds that longer then 0.05 s", height=3)
 l2 = Label(text="Matches found:", width=20, height=3)
 l3 = Label(text="0")
-l4 = Label(text="Recorded samples:", width=20, height=3)
+l4 = Label(text="Recorded samples 1:", width=20, height=3)
 l5 = Label(text="0")
 b1 = Button(text="Record 1", width=20, height=3)
 b2 = Button(text="Play 1", width=20, height=3)
@@ -26,6 +26,7 @@ FS = 44100                  # Sample rate, s^-1
 REC_TIME_0 = 1              # First record time, s
 REC_TIME_1 = 5              # Second record time, s
 LOGIC_LEVEL = 0.5
+MATCH_LEVEL = 0.25
 NOISE_LEVEL = 0.0002        # Spectrum noise filter set experimentally 0.0002
 INPUT_NOISE_LEVEL = 0.01    # Input signal noise filter set = 1%
 MEDFILT_W = 1               # Median filter window
@@ -40,9 +41,14 @@ LEN_0 = FS * REC_TIME_0     # First record length
 LEN_1 = FS * REC_TIME_1     # Second record length
 CHUNK = FS // N             # Chunk length
 HALF_CHUNK = CHUNK // 2
+DOUBLE_CHUNK = 2 * CHUNK
 INPUT_TRIM = FS // 20       # Noisy start of a record set to 0
 HALF_FS = FS // 2
-PHASE = sp.pi / 2
+
+#  Start and stop sounds
+x = np.linspace(0, DOUBLE_CHUNK, DOUBLE_CHUNK)
+start = 0.5 * sp.sin(442.0 / FS * 2 * sp.pi * x)
+stop = 0.5 * sp.sin(660.0 / FS * 2 * sp.pi * x)
 
 
 #  First record function
@@ -51,23 +57,27 @@ def rec0():
     global LEN_0
     LEN_0 = FS * REC_TIME_0
 
-    # x = np.linspace(0, LEN_0, LEN_0)
-    # noise = np.random.normal(0, 0.02, LEN_0)
-    # z = 0.5 * sp.sin(440.0 / FS * 2 * sp.pi * x) + 0.5 * sp.sin(880.0 / FS * 2 * sp.pi * x) + 0.5 * sp.sin(1760.0 / FS * 2 * sp.pi * x)
-    # input0 = z
-    # input0[:19845] = 0
-    # input0[24255:] = 0
+    # Start sound
+    sd.play(start, FS)
+    sd.wait()
 
+    # Record
     input0 = sd.rec(int(LEN_0), samplerate=FS, channels=1)
     sd.wait()
     input0[:INPUT_TRIM] = 0
     input0[np.abs(input0) <= INPUT_NOISE_LEVEL * np.amax(input0)] = 0
     input0 = np.trim_zeros(input0)
 
-    if np.size(input0) < 2 * CHUNK:
+    # Stop sound
+    sd.play(stop, FS)
+    sd.wait()
+
+    # Trim and filter
+    if np.size(input0) < DOUBLE_CHUNK:
         input0 = np.append(input0, np.zeros(2 * CHUNK - np.size(input0)))
     else:
         input0 = np.append(input0, np.zeros((np.size(input0) // CHUNK + 1) * CHUNK - np.size(input0)))
+
     LEN_0 = np.size(input0)
     l5['text'] = LEN_0
     b1['text'] = "Record again"
@@ -87,15 +97,19 @@ def rec1():
     global input1
     plt.close('all')
 
-    # x = np.linspace(0, LEN_1, LEN_1)
-    # noise = np.random.normal(0, 0.05, LEN_1)
-    # z = noise + 0.1 * sp.sin(440.0 / FS * 2 * sp.pi * x) + 0.1 * sp.sin(880.0 / FS * 2 * sp.pi * x) + 0.1 * sp.sin(1760.0 / FS * 2 * sp.pi * x)
-    # input1 = z
-    # input1[:44100] = 0
-    # input1[2 * 44100:3 * 44100] = 0
+    # Start sound
+    sd.play(start, FS)
+    sd.wait()
 
+    # Record
     input1 = sd.rec(int(LEN_1), samplerate=FS, channels=1)
     sd.wait()
+
+    # Stop sound
+    sd.play(stop, FS)
+    sd.wait()
+
+    # Trim and filter
     input1[:INPUT_TRIM] = 0
     input1[np.abs(input1) < INPUT_NOISE_LEVEL * np.amax(input1)] = 0
     b3['text'] = "Record again"
@@ -155,27 +169,26 @@ def play1():
                 output1[i][j] = 1
 
     #  Spectrum comparison
-    n = n1 + 1
+    n = n1 + 1  # Number of comparisons
     xd = np.arange(n)
     matches = np.zeros(n)
     recognition = np.zeros(n)
     output1 = np.concatenate([output1, np.zeros((n0, HALF_CHUNK))])
-    window_and_output = np.zeros((n0, HALF_CHUNK))
-    print("LEN_0 " + str(LEN_0) + " n0 " + str(n0) + " " + "LEN_1 " + str(LEN_1) + " n1 " + str(n1) + " n " + str(n))
+    match_output1 = np.zeros((n0, HALF_CHUNK))
     for i in range(0, n):
         window = output1[i:i + n0, :]
         for j in range(0, n0):
             for k in range(0, HALF_CHUNK):
-                window_and_output[j][k] = window[j][k] and output0[j][k]
+                match_output1[j][k] = window[j][k] and output0[j][k]
         total_harm = np.count_nonzero(output0)
-        match_harm = np.count_nonzero(window_and_output)
-        print(str(i) + " total " + str(total_harm) + " match " + str(match_harm))
+        match_harm = np.count_nonzero(match_output1)
+        # Match function
         if total_harm > 0:
             matches[i] = 1 - (total_harm - match_harm) / total_harm
         else:
             matches[i] = 0
         if i > 0:
-            if ((matches[i] - matches[i - 1]) <= 0) & (matches[i - 1] > 0):
+            if ((matches[i] - matches[i - 1]) <= 0) & (matches[i - 1] > MATCH_LEVEL):
                 recognition[i] = recognition[i - 1] = 1
 
     if np.count_nonzero(matches) == 0:
@@ -186,7 +199,7 @@ def play1():
     #  Input/output plotting
     plt.figure()
     plt.title('Blue - first record, orange - second record, green - overlap')
-    plt.plot(x0 / FS, y0, x1 / FS, y1, xd * n1 / ((n - 1) * N), matches)
+    plt.plot(x0 / FS, y0, x1 / FS, y1)  # , xd * n1 / ((n - 1) * N), matches
     plt.grid(True)
     plt.fill_between(xd * n1 / ((n - 1) * N), -1, 1, where=recognition > 0, color='green', alpha='0.75')
     plt.xlabel('Time, s')
