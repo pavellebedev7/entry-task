@@ -4,22 +4,7 @@ from scipy.signal import medfilt
 from scipy import blackman
 import matplotlib.pyplot as plt
 import numpy as np
-import scipy as sp
 import sounddevice as sd
-
-#  Interface
-root = Tk()
-root.title("Sound recording and recognition")
-root.geometry('1000x500')
-l1 = Label(text="Recognition only works for sounds that longer then 0.05 s", height=3)
-l2 = Label(text="Matches found:", width=20, height=3)
-l3 = Label(text="0")
-l4 = Label(text="Recorded samples 1:", width=20, height=3)
-l5 = Label(text="0")
-b1 = Button(text="Record 1", width=20, height=3)
-b2 = Button(text="Play 1", width=20, height=3)
-b3 = Button(text="Record 2", width=20, height=3)
-b4 = Button(text="Play 2", width=20, height=3)
 
 #  Constants
 FS = 44100                  # Sample rate, s^-1
@@ -47,8 +32,8 @@ HALF_FS = FS // 2
 
 #  Start and stop sounds
 x = np.linspace(0, DOUBLE_CHUNK, DOUBLE_CHUNK)
-start = 0.5 * sp.sin(442.0 / FS * 2 * sp.pi * x)
-stop = 0.5 * sp.sin(660.0 / FS * 2 * sp.pi * x)
+start = 0.5 * np.sin(442.0 / FS * 2 * np.pi * x)
+stop = 0.5 * np.sin(660.0 / FS * 2 * np.pi * x)
 
 
 #  First record function
@@ -74,7 +59,7 @@ def rec0():
 
     # Trim and filter
     if np.size(input0) < DOUBLE_CHUNK:
-        input0 = np.append(input0, np.zeros(2 * CHUNK - np.size(input0)))
+        input0 = np.append(input0, np.zeros(DOUBLE_CHUNK - np.size(input0)))
     else:
         input0 = np.append(input0, np.zeros((np.size(input0) // CHUNK + 1) * CHUNK - np.size(input0)))
 
@@ -87,7 +72,6 @@ def rec0():
 
 #  First play function
 def play0():
-    global input0
     sd.play(input0, FS)
     sd.wait()
 
@@ -140,30 +124,25 @@ def play1():
     output0 = np.zeros((n0, HALF_CHUNK))
     output1 = np.zeros((n1, HALF_CHUNK))
 
-    #  Spectrum calculation
+    #  Spectrum calculation for first record
     for i in range(0, n0):
         zf0[i] = 2.0 / CHUNK * abs(fft(y0[CHUNK * i:CHUNK * (i + 1)] * w)[0:HALF_CHUNK])
         output0[i] = medfilt(zf0[i], MEDFILT_W)
-        #  Spectrum mask
         max0 = np.amax(output0[i])
         for j in range(0, HALF_CHUNK):
-            #  Spectrum filter
-            if np.abs(output0[i][j]) < NOISE_LEVEL:
-                output0[i][j] = 0
-            if output0[i][j] <= LOGIC_LEVEL * max0:
+            #  Spectrum filter and mask
+            if (output0[i][j] <= LOGIC_LEVEL * max0) or (np.abs(output0[i][j]) < NOISE_LEVEL):
                 output0[i][j] = 0
             else:
                 output0[i][j] = 1
+    #  Spectrum calculation for second record
     for i in range(0, n1):
         zf1[i] = 2.0 / CHUNK * abs(fft(y1[CHUNK * i:CHUNK * (i + 1)] * w)[0:HALF_CHUNK])
         output1[i] = medfilt(zf1[i], MEDFILT_W)
-        #  Spectrum mask
         max1 = np.amax(output1[i])
         for j in range(0, HALF_CHUNK):
-            #  Spectrum filter
-            if np.abs(output1[i][j]) < NOISE_LEVEL:
-                output1[i][j] = 0
-            if output1[i][j] <= LOGIC_LEVEL * max1:
+            #  Spectrum filter and mask
+            if (output1[i][j] <= LOGIC_LEVEL * max1) or (np.abs(output1[i][j]) < NOISE_LEVEL):
                 output1[i][j] = 0
             else:
                 output1[i][j] = 1
@@ -188,7 +167,7 @@ def play1():
         else:
             matches[i] = 0
         if i > 0:
-            if ((matches[i] - matches[i - 1]) <= 0) & (matches[i - 1] > MATCH_LEVEL):
+            if ((matches[i] - matches[i - 1]) <= 0) and (matches[i - 1] > MATCH_LEVEL):
                 recognition[i] = recognition[i - 1] = 1
 
     if np.count_nonzero(matches) == 0:
@@ -198,7 +177,7 @@ def play1():
 
     #  Input/output plotting
     plt.figure()
-    plt.title('Blue - first record, orange - second record, green - overlap')
+    plt.title('Blue - first record, orange - second record, green - match')
     plt.plot(x0 / FS, y0, x1 / FS, y1)  # , xd * n1 / ((n - 1) * N), matches
     plt.grid(True)
     plt.fill_between(xd * n1 / ((n - 1) * N), -1, 1, where=recognition > 0, color='green', alpha='0.75')
@@ -206,7 +185,20 @@ def play1():
     plt.show()
 
 
-#  Interface config
+#  Interface
+root = Tk()
+root.title("Sound recording and recognition")
+root.geometry('1000x500')
+l1 = Label(text="Record 1 = 1 s, Record 2 = 5 s\nRecognition only works for sounds that longer then 0.05 s", height=3)
+l2 = Label(text="Matches found:", width=20, height=3)
+l3 = Label(text="0")
+l4 = Label(text="Recorded samples 1:", width=20, height=3)
+l5 = Label(text="0")
+b1 = Button(text="Record 1", width=20, height=3)
+b2 = Button(text="Play 1", width=20, height=3)
+b3 = Button(text="Record 2", width=20, height=3)
+b4 = Button(text="Play 2", width=20, height=3)
+
 b1.config(command=rec0)
 b2.config(command=play0)
 b3.config(command=rec1)
